@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Колесо фортуны</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      background-color: #fff;
+      border: 2px solid #333;
+    }
+    #winner {
+      margin-top: 20px;
+      font-size: 24px;
+      color: green;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 5px;
+      margin: 10px 5px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Колесо фортуны</h1>
+
+<div>
+  <input type="text" id="itemInput" placeholder="Введите текст для сектора">
+  <button onclick="addItem()">Добавить</button>
+</div>
+
+<canvas id="wheel" width="500" height="500"></canvas>
+
+<button onclick="startSpinning()">Старт</button>
+<div id="winner"></div>
+
+<script>
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  const radius = canvas.width / 2 - 10;
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  let items = [];
+  let angle = 0;
+  let spinning = false;
+  let animationFrame;
+  let winnerDisplay = document.getElementById('winner');
+
+  function addItem() {
+    const input = document.getElementById('itemInput');
+    if (input.value.trim()) {
+      items.push(input.value.trim());
+      input.value = '';
+      drawWheel();
+    }
+  }
+
+  function drawWheel() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const numItems = items.length;
+    const anglePerItem = 2 * Math.PI / numItems;
+
+    for (let i = 0; i < numItems; i++) {
+      const startAngle = angle + i * anglePerItem;
+      const endAngle = startAngle + anglePerItem;
+
+      // Fill sector
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.fillStyle = i % 2 === 0 ? '#f8c471' : '#f5b7b1';
+      ctx.fill();
+
+      // Text
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(startAngle + anglePerItem / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#000";
+      ctx.font = "16px Arial";
+      ctx.fillText(items[i], radius - 10, 5);
+      ctx.restore();
+    }
+
+    // Draw pointer
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - radius - 10);
+    ctx.lineTo(centerX - 10, centerY - radius - 30);
+    ctx.lineTo(centerX + 10, centerY - radius - 30);
+    ctx.closePath();
+    ctx.fillStyle = 'red';
+    ctx.fill();
+  }
+
+  function startSpinning() {
+    if (spinning || items.length === 0) return;
+
+    const duration = 10000; // 10 seconds
+    const start = performance.now();
+    const totalRotation = Math.random() * 10 + 10; // Random number of full spins
+
+    spinning = true;
+    winnerDisplay.textContent = '';
+
+    function animate(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+      angle = totalRotation * easeOut;
+
+      drawWheel();
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        spinning = false;
+        const selectedIndex = items.length - Math.floor((angle / (2 * Math.PI)) % items.length) - 1;
+        const winner = items[selectedIndex];
+        winnerDisplay.textContent = `Победитель: ${winner}`;
+      }
+    }
+
+    animationFrame = requestAnimationFrame(animate);
+  }
+
+  drawWheel();
+</script>
+
+</body>
+</html>
